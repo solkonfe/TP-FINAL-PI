@@ -13,6 +13,30 @@ PASO 6: armar la lista con especies ordenadas por diametro promedio
 PASO 7: (no sabemos si es back o front) armar los archivos csv de salida
 */
 
+/*
+BACKEND.C
+Arreglar ordenarBarrios para que elimine barrios repetidos. HECHO
+Retornar 1 o 0 cada vez que hagamos una funcion que use malloc/calloc/realloc. (agregar barrios, y agregar arbol en bosque)
+Revisar las funciones de lautaro y arreglar los errores si es que los hay.
+Nuevo free.
+
+
+lectura.c
+Armarlo con el nuevo formato y borrar el int main
+Decidir si abortamos cuando hay errores en la reserva de memoria
+
+
+main.c
+hacerlo
+
+
+query.c
+hacerlo completo
+
+}
+*/
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,27 +55,20 @@ typedef struct tArbol {
 	float diametroTotal;
 	unsigned long int cantArboles;
 }tArbol;
+
+/* typedef struct tGeneral{
+	char * nombre;
+	double param1;
+	unsigned long int param2;
+}tGeneral; */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////estructuras ordenadas///////////////////////////////////////////////
-typedef struct tNodoBarrio { // o usar esta struct para el query 1 o ordenar devuelta el * barrios
+typedef struct tGenerica{
 	char * nombre;
-	double indice; // arboles por cantDeHabitantes
-	int cantdeArb;
-	struct tNodoBarrio * cola;
-}tNodoBarrio;
-
-typedef struct tNodoArbol{
-	char * especie;
-	double diamPromedio;
-	struct tNodoArbol * cola;
-}tNodoArbol;
-
-typedef struct tNodoCuenta{// posible creacion de una lista nueva(opcion2)
-	char * nombre;
-	int cantdeArb;
-	struct tNodoCuenta * cola;
-}tNodoCuenta;
+	double resultado; // en un caso representa arboles, en otro indice, en otro diametro
+	struct aux * cola;
+}tGenerica;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct ciudadCDT{
@@ -61,30 +78,36 @@ typedef struct ciudadCDT{
 	tArbol * bosque;     // vector de structs tArbol
 	size_t dimBosque;
 
-	// listas que contendran los datos ordenados solicitados en las queries
-	tNodoBarrio * primerBarrio; // primer nodo de la lista que contiene los indices por barrio (query 2)
-	tNodoArbol * primerArbol;// primer tipo de arbol con su diametro promedio(query 3)
-	tNodoCuenta * primerCuenta;
+	tGenerica * primerNodo;
 }ciudadCDT;
 
-typedef ciudadCDT * ciudadADT;
+typedef ciudadCDT * ciudadADT;// va en el .h
 
 ///////////////////////////////////////////////Funciones////////////////////////////////////////////////
 ciudadADT nuevaCiudad(){
 	return calloc(1, sizeof(ciudadADT));
 }
 
-void agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) {
-	ciudad->barrios = realloc(ciudad->barrios, sizeof(tBarrio) * (ciudad->dimBarrios + 1));
-
-	if( ciudad->barrios == NULL ) { //// REVISAR
-		printf("No hay espacio en memoria \n", );
-		exit(1);
+static int pertenece(tBarrio * barrio, char * nombre, size_t dim) {
+	for(int i = 0; i < dim; i++){
+		if(strcmp(barrio[i].nombre, nombre) == 0)
+			return 1;
 	}
+	return 0;
+}
 
-	strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
-	ciudad->barrios[ciudad->dimBarrios].cantDeHabitantes = poblacion;
-	ciudad->barrios[ciudad->dimBarrios++].cantdeArb = 0;
+int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) {
+	if( ! pertenece(ciudad->barrios, nombre, ciudad->dimBarrios)){
+		ciudad->barrios = realloc(ciudad->barrios, sizeof(tBarrio) * (ciudad->dimBarrios + 1));
+		if( ciudad->barrios == NULL ) {
+			return 1;
+		}
+
+		strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
+		ciudad->barrios[ciudad->dimBarrios].cantDeHabitantes = poblacion;
+		ciudad->barrios[ciudad->dimBarrios++].cantdeArb = 0;
+		return 0;
+	}
 }
 
 static void intercambioBarrios(tBarrio * b1, tBarrio * b2) {
@@ -118,131 +141,89 @@ static void AgregarArbolEnBarrio(ciudadCDT ciudad, char * nombre, int dim) { // 
 	}
 }
 
-static void AgregarArbolesEnBosque(ciudadADT ciudad, char * especie, double diametro){
+static int AgregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametro){
 	int i;
-	for(i = 0; i < ciudad->dimBosque; i++) {
+	for(i = 0; i < ciudad->dimBosque; i++) { // reutilizar pertenece
 		if (strcmp(ciudad->bosque[i].especie, especie) == 0) {
 			ciudad->bosque[i].diametroTotal += diametro; // REVISAR NO REPETIR CODIGO
 			ciudad->bosque[i].cantArboles += 1;
-			return;
+			return 0;
 		}
 	}
 	//si es un bosque vacio o hay una nueva especie
-	ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tArbol)); // FALTA VERIFICAR REALLOC
+	ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tArbol));
+	if(ciudad->bosque == NULL ) {
+		return 1;
+	}
 	ciudad->dimBosque += 1;
 	strcpy(ciudad->bosque[i].especie, nombre);
 	ciudad->bosque[i].diametroTotal += diametro; // REVISAR NO REPETIR CODIGO
 	ciudad->bosque[i].cantArboles += 1;
-	return;
+	return 0;
 }
 
-void AgregarArbol(ciudadADT ciudad, char *nombre, char * especie, double diametro) {
-	AgregarArbolsEnBarrio(ciudad, nombre, ciudad->dimBarrios);
-	AgregarArbolesEnBosque(ciudad, especie, diametro);
+int AgregarArbol(ciudadADT ciudad, char *nombre, char * especie, double diametro) {
+	AgregarArbolEnBarrio(ciudad, nombre, ciudad->dimBarrios);
+	return AgregarArbolEnBosque(ciudad, especie, diametro);
 }
 
 //calcula el indice y lo ingresa ordenado en una lista
-void addcalcIndex(ciudadADT ciudad, char * nombre){//llamada cuando se terminan de leer ambos archivos .csv
-	// si se llama cuando se terminan de leer ambos archivos no seria mejor pasarle ciudad 
+void query2(ciudadADT ciudad){//llamada cuando se terminan de leer ambos archivos .csv
+	// si se llama cuando se terminan de leer ambos archivos no seria mejor pasarle ciudad
 	// y dsp por cada indice del vecor de barrios calculas el indice de cant de habitantes y por cada cuenta lo mandas a la lista nueva
-	int i = 0;
-	tNodoBarrio * aux = ciudad->primerBarrio;
-	tNodoBarrio * prev = NULL;
-	double indice = 0;
-	for(i = 0; i < ciudad->cantdeArb ; i++){
-		// no seria ciudad->cantbarrios?
-		if(strcmp(ciudad->barrios[i].nombre, nombre) == 0){
-			index = ((double)ciudad->barrios[i].cantdeArb)/ciudad->barrios[i].cantDeHabitantes; // casteo a double con 2 cifras signicativas luego de la coma, ver como hacerlo
-			//break;
-		}
-	}
-
-	tNodoBarrio * new = malloc(sizeof(tNodoBarrio));
-	new->indice = indice;
-	strcpy(new->nombre, nombre);
-	for(; aux != NULL; prev = aux, aux = aux->cola){
-		if(aux->indice < indice || aux->indice == indice && (strcmp(aux->nombre, nombre) > 0)){
-			if(prev == NULL){// que estoy ingresando antes del primer indice
-				new->cola = collection->primerBarrio->cola;
-				ciudad->primerBarrio = new;
-			}
-			else{
-				new->cola = aux;
-				prev->cola = new;
-			}
-		}
-	}
-	if(prev == NULL){// no se ingreso ningun indice previo, este es el primero que se ingresa
-		new->cola = NULL;
-		ciudad->primerBarrio = new;
-	}
-	else{
-		new->cola = aux;
-		prev->cola = new;
+	for(int i = 0; i < ciudad->dimBarrios ; i++){
+		tGenerica * new = malloc(sizeof(tNodoBarrio));
+		new->resultado = ((double)ciudad->barrios[i].cantdeArb)/ciudad->barrios[i].cantDeHabitantes;// casteo a double con 2 cifras signicativas luego de la coma, ver como hacerlo
+		strcpy(new->nombre, ciudad->barrios[i].nombre);
+		ingresarOrdenadoLista(new, ciudad->primerBarrio);
 	}
 	return;
 }
 
 //calcula el promedio de los diametros y lo ingresa oredenados en una lista
-void promDiam(collectionADT collection){
-	tNodoArbol * aux = ciudad->primerArbol;
-	tNodoArbol * prev = NULL;
+void query3(ciudadADT ciudad){
 	for(int i = 0; i < ciudad->dimBosque; i++){
-		tNodoArbol * new = malloc(sizeof(tNodoArbol));
-		strcpy(new->especie, ciudad->bosque[i].nombre);
-		new->diamPromedio = ciudad->bosque[i].diametroTotal/(double)(ciudad->bosque[i].cantArboles);
-		for(; aux != NULL; prev = aux, aux = aux->cola){
-			if(new->diamPromedio > aux->diamPromedio || new->diamPromedio == aux->diamPromedio && strcmp(new->nombre, aux->nombre) > 0){
-				if(prev == NULL){
-					new->cola = ciudad->primerArbol->cola;
-					ciudad->primerArbol = new;
-				}
-				else{
-					prev->cola = new;
-					new->cola = aux;
-				}
-			}
-		}
-		if(prev == NULL){
-			new->cola = NULL;
-			ciudad->primerArbol = new;
-		}
-		else{
-			prev->cola = new;
-			new->cola = aux;
-		}
+		tGenerica * new = malloc(sizeof(tNodoArbol));
+		strcpy(new->nombre, ciudad->bosque[i].nombre);
+		new->resultado = ciudad->bosque[i].diametroTotal/(double)(ciudad->bosque[i].cantArboles);
+		ingresarOrdenadoLista(new, ciudad->primerArbol);
 	}
 	return;
 }
 
-void ordenarBarriosLista(ciudadADT ciudad){
-	int i = 0;
-	tNodoCuenta * aux = ciudad->primerCuenta;
-	tNodoCuenta * prev = NULL;
-	for(i = 0; i < ciudad->cantdeArb ; i++){
-		tNodoCuenta * new = malloc(sizeof(tNodoCuenta));
-		new->cantdeArb = ciudad->bosque[i].cantDeArboles;
+void query1(ciudadADT ciudad){
+	for(int i = 0; i < ciudad->dimBarrios ; i++){
+		tGenerica * new = malloc(sizeof(tNodoCuenta));
+		new->resultado = ciudad->bosque[i].cantDeArboles;
 		strcpy(new->nombre, ciudad->bosque[i].nombre);
-		for(; aux != NULL; prev = aux, aux = aux -> cola){
-			if(new->cantDeArboles > aux->cantDeArboles || aux->cantDeArboles == new->cantDeArboles && strcmp(aux->nombre, new->nombre) > 0){
-				if(prev == NULL){
-					new->cola = ciudad->primerCuenta->cola;
-					ciudad->primerCuenta = new;
-				}
-				else{
-					prev->cola = new;
-					new->cola = aux;
-				}
-				return;
+		ingresarOrdenadoLista(new, ciudad->primerCuenta);
+	}
+	return;
+}
+
+static void ingresarOrdenadoLista(tGenerica * nodo, tGenerica * lista){
+	tGenerica * aux = lista;
+	tGenerica * prev = NULL;
+	for(; aux != NULL; prev = aux, aux = aux -> cola){
+		if(nodo->resultado > aux->resultado || aux->resultado == new->resultado && strcmp(aux->nombre, new->nombre) > 0){
+			if(prev == NULL){//tengo que cambiar a donde apunta el primero
+				nodo->cola = lista;
+				lista = new;
 			}
+			else{
+				prev->cola = nodo;
+				nodo->cola = aux;
+			}
+			return;
 		}
-		if(prev == NULL){
-			new->cola = NULL;
-			ciudad->primerCuenta = new;
-		}
-		else{
-			prev->cola = new;
-			new->cola = NULL;
+	}
+	if(prev == NULL){//no hay nodo ingresado
+		nodo->cola = NULL;
+		lista = new;
+	}
+	else{//lo pongo a lo ultimo
+		prev->cola = nodo;
+		nodo->cola = NULL;
 	}
 	return;
 }
