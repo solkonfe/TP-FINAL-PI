@@ -214,7 +214,7 @@ static void freeRecLista(tListaGenerica * first){
 }
 
 
-void freeCiudad(ciudadADT ciudad) { //CAMBIAR NOMBRES
+void freeCiudad(ciudadADT ciudad) {
 	freeRecLista(ciudad->primerNodo);
 	free(ciudad->bosque);
 	free(ciudad->barrios);
