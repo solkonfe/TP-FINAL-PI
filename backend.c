@@ -37,81 +37,68 @@ hacerlo completo
 */
 
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "CollectionADT.h"
 
 /////////////////////////////////////////////////estructuras con los datos sin procesar/////////////////////////////
-typedef struct tBarrio { // vamos a usar un vector de structs tBarrio para poder usar busqueda binaria cada vez que insertamos un arbol
+typedef struct tGeneral{
 	char * nombre;
-	unsigned long int cantDeArboles;
-	unsigned long int cantDeHabitantes;
-}tBarrio;
-
-typedef struct tArbol {
-	char * especie;
-	float diametroTotal;
-	unsigned long int cantArboles;
-}tArbol;
-
-/* typedef struct tGeneral{
-	char * nombre;
-	double param1;
-	unsigned long int param2;
-}tGeneral; */
+	double param1; // cantDeHabitantes o sumaDiametros
+	unsigned long int param2; //cantdeArb
+}tGeneral;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////estructuras ordenadas///////////////////////////////////////////////
-typedef struct tGenerica{
+typedef struct tListaGenerica{
 	char * nombre;
 	double resultado; // en un caso representa arboles, en otro indice, en otro diametro
 	struct aux * cola;
-}tGenerica;
+}tListaGenerica;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct ciudadCDT{
 	// datos sin procesar
-	tBarrio * barrios;   // vector de structs tBarrio
+	tGeneral * barrios;   // vector de structs tBarrio
 	size_t dimBarrios;
-	tArbol * bosque;     // vector de structs tArbol
+	tGeneral * bosque;     // vector de structs tArbol
 	size_t dimBosque;
 
-	tGenerica * primerNodo;
+	tListaGenerica * primerNodo;
 }ciudadCDT;
 
-typedef ciudadCDT * ciudadADT;// va en el .h
 
 ///////////////////////////////////////////////Funciones////////////////////////////////////////////////
 ciudadADT nuevaCiudad(){
 	return calloc(1, sizeof(ciudadADT));
 }
 
-static int pertenece(tBarrio * barrio, char * nombre, size_t dim) {
-	for(int i = 0; i < dim; i++){
-		if(strcmp(barrio[i].nombre, nombre) == 0)
+static int pertenece(tGeneral * vector, char * nombre, size_t dim, size_t * indice) {
+	for(int i = 0; i < dim; i++) {
+		if(strcmp(vector[i].nombre, nombre) == 0) {
+			if(indice != NULL)
+				*indice = i;
 			return 1;
 	}
 	return 0;
 }
 
 int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) {
-	if( ! pertenece(ciudad->barrios, nombre, ciudad->dimBarrios)){
+	if( ! pertenece(ciudad->barrios, nombre, ciudad->dimBarrios, NULL)) {
 		ciudad->barrios = realloc(ciudad->barrios, sizeof(tBarrio) * (ciudad->dimBarrios + 1));
 		if( ciudad->barrios == NULL ) {
 			return 1;
 		}
-
 		strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
-		ciudad->barrios[ciudad->dimBarrios].cantDeHabitantes = poblacion;
-		ciudad->barrios[ciudad->dimBarrios++].cantdeArb = 0;
-		return 0;
+		ciudad->barrios[ciudad->dimBarrios].param1 = poblacion;
+		ciudad->barrios[ciudad->dimBarrios++].param2 = 0;
 	}
+	return 0;
 }
 
-static void intercambioBarrios(tBarrio * b1, tBarrio * b2) {
-		tBarrio aux = * b1;
+static void intercambioVec(tGeneral * b1, tGeneral * b2) {
+		tGeneral aux = * b1;
 		*b1 = *b2;
 		*b2 = aux;
 }
@@ -120,7 +107,7 @@ void ordenarBarrios(ciudadADT ciudad){
 		for(int i = 0; i < ciudad->dimBarrios - 1; i++) {
 			for(int j = i + 1; j < ciudad->dimBarrios; j++) {
 				if(strcmp(ciudad->barrios[i].nombre, ciudad->barrios[j].nombre) > 0){
-					intercambioBarrios(ciudad->barrios[i], ciudad->barrios[j]);
+					intercambioVec(ciudad->barrios[i], ciudad->barrios[j]);
 				}
 			}
 		}
@@ -133,7 +120,7 @@ static void AgregarArbolEnBarrio(ciudadCDT ciudad, char * nombre, int dim) { // 
 	while(ultimo >= primero) {
 		medio = (primero + ultimo) / 2;
 		if( (c = strcmp(ciudad->barrios[medio].nombre,nombre)) == 0 )
-			ciudad->barrios[medio].cantdeArb++;
+			ciudad->barrios[medio].param2++;
 		else if ( c < 0 )
 			ultimo = medio - 1;
 		else
@@ -142,63 +129,50 @@ static void AgregarArbolEnBarrio(ciudadCDT ciudad, char * nombre, int dim) { // 
 }
 
 static int AgregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametro){
-	int i;
-	for(i = 0; i < ciudad->dimBosque; i++) { // reutilizar pertenece
-		if (strcmp(ciudad->bosque[i].especie, especie) == 0) {
-			ciudad->bosque[i].diametroTotal += diametro; // REVISAR NO REPETIR CODIGO
-			ciudad->bosque[i].cantArboles += 1;
-			return 0;
+	size_t indice;
+	if(!pertenece(ciudad->bosque, especie, ciudad->dimBosque, &indice)) {
+		ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tArbol));
+		if(ciudad->bosque == NULL ) {
+			return 1;
 		}
+		ciudad->dimBosque += 1;
 	}
-	//si es un bosque vacio o hay una nueva especie
-	ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tArbol));
-	if(ciudad->bosque == NULL ) {
-		return 1;
-	}
-	ciudad->dimBosque += 1;
-	strcpy(ciudad->bosque[i].especie, nombre);
-	ciudad->bosque[i].diametroTotal += diametro; // REVISAR NO REPETIR CODIGO
-	ciudad->bosque[i].cantArboles += 1;
+	strcpy(ciudad->bosque[indice].especie, nombre);
+	ciudad->bosque[indice].param1 += diametro;
+	ciudad->bosque[indice].param2 += 1;
 	return 0;
 }
 
-int AgregarArbol(ciudadADT ciudad, char *nombre, char * especie, double diametro) {
+int AgregarArbol(ciudadADT ciudad, char * nombre, char * especie, double diametro) {
 	AgregarArbolEnBarrio(ciudad, nombre, ciudad->dimBarrios);
 	return AgregarArbolEnBosque(ciudad, especie, diametro);
 }
 
+void query(ciudadADT ciudad, size_t numero){
+
+	if( numero != QUERY3)
+		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
+	else
+	  queryGeneral(ciudad, ciudad->bosque, ciudad->dimBosque, QUERY3);
+}
 //calcula el indice y lo ingresa ordenado en una lista
-void query2(ciudadADT ciudad){//llamada cuando se terminan de leer ambos archivos .csv
-	// si se llama cuando se terminan de leer ambos archivos no seria mejor pasarle ciudad
-	// y dsp por cada indice del vecor de barrios calculas el indice de cant de habitantes y por cada cuenta lo mandas a la lista nueva
-	for(int i = 0; i < ciudad->dimBarrios ; i++){
-		tGenerica * new = malloc(sizeof(tNodoBarrio));
-		new->resultado = ((double)ciudad->barrios[i].cantdeArb)/ciudad->barrios[i].cantDeHabitantes;// casteo a double con 2 cifras signicativas luego de la coma, ver como hacerlo
-		strcpy(new->nombre, ciudad->barrios[i].nombre);
-		ingresarOrdenadoLista(new, ciudad->primerBarrio);
+static void queryGeneral(ciudadADT ciudad, tGeneral vector, size_t dim, size_t flag) { //llamada cuando se terminan de leer ambos archivos .csv
+	double res;
+	for(size_t i = 0; i < dim; i++){
+		tGenerica * new = malloc(sizeof(tGenerica));
+		if(flag == QUERY1){
+			res = vector[i].param2;
+		}
+		else if (	flag == QUERY2 ){
+		  res = vector[i].param2 / vector[i].param1;
+		}
+		else{
+			res = vector[i].param1 / vector[i].param2;
+		}
+		new->resultado = res; // casteo a double con 2 cifras signicativas luego de la coma, ver como hacerlo
+		strcpy(new->nombre, vector[i].nombre);
+		ingresarOrdenadoLista(new, ciudad->primerNodo);
 	}
-	return;
-}
-
-//calcula el promedio de los diametros y lo ingresa oredenados en una lista
-void query3(ciudadADT ciudad){
-	for(int i = 0; i < ciudad->dimBosque; i++){
-		tGenerica * new = malloc(sizeof(tNodoArbol));
-		strcpy(new->nombre, ciudad->bosque[i].nombre);
-		new->resultado = ciudad->bosque[i].diametroTotal/(double)(ciudad->bosque[i].cantArboles);
-		ingresarOrdenadoLista(new, ciudad->primerArbol);
-	}
-	return;
-}
-
-void query1(ciudadADT ciudad){
-	for(int i = 0; i < ciudad->dimBarrios ; i++){
-		tGenerica * new = malloc(sizeof(tNodoCuenta));
-		new->resultado = ciudad->bosque[i].cantDeArboles;
-		strcpy(new->nombre, ciudad->bosque[i].nombre);
-		ingresarOrdenadoLista(new, ciudad->primerCuenta);
-	}
-	return;
 }
 
 static void ingresarOrdenadoLista(tGenerica * nodo, tGenerica * lista){
@@ -228,32 +202,21 @@ static void ingresarOrdenadoLista(tGenerica * nodo, tGenerica * lista){
 	return;
 }
 
-static void freeRecindex(tNodeIndex * first){
+static void freeRecLista(tListaGenerica * first){
 	if(first == NULL){
 		return;
 	}
-	freeRecindex(first->tail);
-	tNodeIndex * aux = first;
-	first = first->tail;
+	freeRecLista(first->cola);
+	tListaGenerica * aux = first;
+	first = first->cola;
 	free(aux);
 	return;
 }
 
-static void freeRecProm(tNodeProm * first){
-	if(first == NULL){
-		return;
-	}
-	freeRecindex(first->tail);
-	tNodeProm * aux = first;
-	first = first->tail;
-	free(aux);
-	return;
-}
 
-void freeCollection(collectionADT collection) { //CAMBIAR NOMBRES
-	freeRecindex(collection->firstI);
-	freeRecProm(collection->firstP);
-	free(collection->vContador);
-	free(collection->vDiamProm);
+void freeCiudad(ciudadADT ciudad) {
+	freeRecLista(ciudad->primerNodo);
+	free(ciudad->bosque);
+	free(ciudad->barrios);
 	free(collection);
 }
