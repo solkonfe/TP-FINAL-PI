@@ -1,48 +1,6 @@
-/*PASO 1: leer archivo barriosBUE.csv // esto es front
-guardando los barrios de una
-barrio1 barrio8 barrio20 barrio3 barrio6
-PASO 2: ordenar los barrios (INEFICIENTE) (PERO ESTO SE EJECUTA 1 SOLA VEZ)
-barrio1 barrio3 barrio6 barrio8 barrio20
-PASO 3: leer archivo arbolesBUE.csv // esto es front
-for(final del vector) (INEFICIENTE) orden n^2 (n = 370 mil)
-	cuando lo encuentra: suma un arbol y se va
-busqueda binaria (eficiente) orden log2 n (n = 370 mil)
-PASO 4: ordenar el mismo vector de barrios pero ahora por total de arboles O hacer una lista
-PASO 5: ordenar el mismo vector de barrios pero ahora por indice O hacer una lista
-PASO 6: armar la lista con especies ordenadas por diametro promedio
-PASO 7: (no sabemos si es back o front) armar los archivos csv de salida
-*/
+#include "ciudadADT.h"
 
-/*
-BACKEND.C
-Arreglar ordenarBarrios para que elimine barrios repetidos. HECHO
-Retornar 1 o 0 cada vez que hagamos una funcion que use malloc/calloc/realloc. (agregar barrios, y agregar arbol en bosque)
-Revisar las funciones de lautaro y arreglar los errores si es que los hay.
-Nuevo free.
-
-
-lectura.c
-Armarlo con el nuevo formato y borrar el int main
-Decidir si abortamos cuando hay errores en la reserva de memoria
-
-
-main.c
-hacerlo
-
-
-query.c
-hacerlo completo
-
-}
-*/
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "CollectionADT.h"
-
-/////////////////////////////////////////////////estructuras con los datos sin procesar/////////////////////////////
+/////////////////////////////////////////////////estructura con los datos sin procesar/////////////////////////////
 typedef struct tGeneral{
 	char * nombre;
 	double param1; // cantDeHabitantes o sumaDiametros
@@ -50,7 +8,7 @@ typedef struct tGeneral{
 }tGeneral;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////estructuras ordenadas///////////////////////////////////////////////
+/////////////////////////////////////////////////estructura ordenada///////////////////////////////////////////////
 typedef struct tListaGenerica{
 	char * nombre;
 	double resultado; // en un caso representa arboles, en otro indice, en otro diametro
@@ -70,6 +28,7 @@ typedef struct ciudadCDT{
 
 
 ///////////////////////////////////////////////Funciones////////////////////////////////////////////////
+//////////////////FALTA CHEQUEAR LOS ERRORES DE MEMORIA CON ERRNO///////////////////////////////////////
 ciudadADT nuevaCiudad(){
 	return calloc(1, sizeof(ciudadADT));
 }
@@ -80,6 +39,7 @@ static int pertenece(tGeneral * vector, char * nombre, size_t dim, size_t * indi
 			if(indice != NULL)
 				*indice = i;
 			return 1;
+		}
 	}
 	return 0;
 }
@@ -88,13 +48,13 @@ int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) {
 	if( ! pertenece(ciudad->barrios, nombre, ciudad->dimBarrios, NULL)) {
 		ciudad->barrios = realloc(ciudad->barrios, sizeof(tBarrio) * (ciudad->dimBarrios + 1));
 		if( ciudad->barrios == NULL ) {
-			return 1;
+			return 0;
 		}
 		strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
 		ciudad->barrios[ciudad->dimBarrios].param1 = poblacion;
 		ciudad->barrios[ciudad->dimBarrios++].param2 = 0;
 	}
-	return 0;
+	return 1;
 }
 
 static void intercambioVec(tGeneral * b1, tGeneral * b2) {
@@ -113,7 +73,7 @@ void ordenarBarrios(ciudadADT ciudad){
 		}
 }
 
-static void AgregarArbolEnBarrio(ciudadCDT ciudad, char * nombre, int dim) { // BASADA EN BUSQUEDA BINARIA
+static void agregarArbolEnBarrio(ciudadCDT ciudad, char * nombre, int dim) { // BASADA EN BUSQUEDA BINARIA
 	int ultimo = dim -1;
 	int medio, c;
 	int primero = 0;
@@ -128,7 +88,7 @@ static void AgregarArbolEnBarrio(ciudadCDT ciudad, char * nombre, int dim) { // 
 	}
 }
 
-static int AgregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametro){
+static int agregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametro){
 	size_t indice;
 	if(!pertenece(ciudad->bosque, especie, ciudad->dimBosque, &indice)) {
 		ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tArbol));
@@ -143,23 +103,15 @@ static int AgregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametr
 	return 0;
 }
 
-int AgregarArbol(ciudadADT ciudad, char * nombre, char * especie, double diametro) {
+int agregarArbol(ciudadADT ciudad, char * nombre, char * especie, double diametro) {
 	AgregarArbolEnBarrio(ciudad, nombre, ciudad->dimBarrios);
 	return AgregarArbolEnBosque(ciudad, especie, diametro);
 }
 
-void query(ciudadADT ciudad, size_t numero){
-
-	if( numero != QUERY3)
-		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
-	else
-	  queryGeneral(ciudad, ciudad->bosque, ciudad->dimBosque, QUERY3);
-}
-//calcula el indice y lo ingresa ordenado en una lista
 static void queryGeneral(ciudadADT ciudad, tGeneral vector, size_t dim, size_t flag) { //llamada cuando se terminan de leer ambos archivos .csv
 	double res;
-	for(size_t i = 0; i < dim; i++){
-		tGenerica * new = malloc(sizeof(tGenerica));
+	for(size_t i = 0; i < dim; i++) {
+		tGenerica * new = malloc(sizeof(tGenerica)); // chequear error
 		if(flag == QUERY1){
 			res = vector[i].param2;
 		}
@@ -174,6 +126,15 @@ static void queryGeneral(ciudadADT ciudad, tGeneral vector, size_t dim, size_t f
 		ingresarOrdenadoLista(new, ciudad->primerNodo);
 	}
 }
+
+void query(ciudadADT ciudad, size_t numero){
+
+	if( numero != QUERY3)
+		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
+	else
+	  queryGeneral(ciudad, ciudad->bosque, ciudad->dimBosque, QUERY3);
+}
+//calcula el indice y lo ingresa ordenado en una lista
 
 static void ingresarOrdenadoLista(tGenerica * nodo, tGenerica * lista){
 	tGenerica * aux = lista;
@@ -212,7 +173,6 @@ static void freeRecLista(tListaGenerica * first){
 	free(aux);
 	return;
 }
-
 
 void freeCiudad(ciudadADT ciudad) {
 	freeRecLista(ciudad->primerNodo);
