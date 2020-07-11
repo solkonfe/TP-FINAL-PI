@@ -115,7 +115,9 @@ static int agregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametr
 	if(!pertenece(ciudad->bosque, especie, ciudad->dimBosque, &indice)) {
 		ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tGeneral)); // VERIFICAR REALLOC
 		ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie)); // VERIFICAR MALLOC
-		strcpy(ciudad->bosque[ciudad->dimBosque++].nombre, especie);
+		strcpy(ciudad->bosque[ciudad->dimBosque].nombre, especie);
+		ciudad->bosque[ciudad->dimBosque].param1 = 0;
+		ciudad->bosque[ciudad->dimBosque++].param2 = 0;
 	}
 
 	ciudad->bosque[indice].param1 += diametro;
