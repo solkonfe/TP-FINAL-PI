@@ -8,14 +8,6 @@ typedef struct tGeneral{
 }tGeneral;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////estructura ordenada///////////////////////////////////////////////
-typedef struct tListaGenerica{
-	char * nombre;
-	double resultado; // en un caso representa arboles, en otro indice, en otro diametro
-	struct tListaGenerica * cola;
-}tListaGenerica;
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct ciudadCDT{
 	// datos sin procesar
 	struct tGeneral * barrios;   // vector de structs tBarrio
@@ -23,9 +15,10 @@ typedef struct ciudadCDT{
 	struct tGeneral * bosque;     // vector de structs tArbol
 	size_t dimBosque;
 
-	struct tListaGenerica * primerNodo;
+	struct tListaGenerica * primerNodoQ1;
+	struct tListaGenerica * primerNodoQ2;
+	struct tListaGenerica * primerNodoQ3;
 }ciudadCDT;
-
 
 ///////////////////////////////////////////////Funciones////////////////////////////////////////////////
 //////////////////FALTA CHEQUEAR LOS ERRORES DE MEMORIA CON ERRNO///////////////////////////////////////
@@ -51,7 +44,7 @@ int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) { // FUNCION C
 		if( ciudad->barrios == NULL ) { // ESTA VERIFICACION HAY QUE CORREGIRLA CON ERRNO
 			return 0;
 		}
-		ciudad->barrios[ciudad->dimBarrios].nombre = malloc(strlen(nombre));
+		ciudad->barrios[ciudad->dimBarrios].nombre = malloc(strlen(nombre) + 1);
 		// VERIFICAR MALLOC CON ERRNO
 		strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
 		ciudad->barrios[ciudad->dimBarrios].param1 = poblacion;
@@ -92,29 +85,13 @@ static void agregarArbolEnBarrio(ciudadADT ciudad, char * nombre) { // BASADA EN
 			ultimo = medio - 1;
 	}
 }
-//ciudadnombres - nombre > 0 primero = mitad + 1
-
-/*
-int bBinaria(int n,int x[],int t)
-{
-    int mitad,izq,der;
-    izq=0;der=n-1;
-    while(izq<=der)
-    {
-        mitad = (izq+der)/2;
-        if(t>x[mitad])izq = mitad+1;
-        else if(t<x[mitad]) der = mitad-1;
-        else return mitad;
-    }
-    return -1;
-}*/
 
 static int agregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametro){
 	size_t indice = ciudad->dimBosque;
 
 	if(!pertenece(ciudad->bosque, especie, ciudad->dimBosque, &indice)) {
 		ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tGeneral)); // VERIFICAR REALLOC
-		ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie)); // VERIFICAR MALLOC
+		ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie) +1); // VERIFICAR MALLOC
 		strcpy(ciudad->bosque[ciudad->dimBosque].nombre, especie);
 		ciudad->bosque[ciudad->dimBosque].param1 = 0;
 		ciudad->bosque[ciudad->dimBosque++].param2 = 0;
@@ -130,93 +107,64 @@ int agregarArbol(ciudadADT ciudad, char * nombre, char * especie, double diametr
 	return agregarArbolEnBosque(ciudad, especie, diametro);
 }
 
-static void ingresarOrdenadoLista(tListaGenerica * nodo, tListaGenerica * lista) {
-	tListaGenerica * aux = lista;
-	tListaGenerica * prev = NULL;
-	for(; aux != NULL; prev = aux, aux = aux -> cola){
-		if( (nodo->resultado > aux->resultado) || ((aux->resultado == nodo->resultado) && strcmp(aux->nombre, nodo->nombre) > 0)){
-			if(prev == NULL){//tengo que cambiar a donde apunta el primero
-				nodo->cola = lista;
-				lista = nodo;
-			}
-			else{
-				prev->cola = nodo;
-				nodo->cola = aux;
-			}
-			return;
-		}
+static tListaGenerica * ingresarRecursiva(tListaGenerica * primero, char * nombre, double resultado) {
+	if(primero == NULL || primero->resultado < resultado || (primero->resultado == resultado && strcmp(primero->nombre, nombre)>0 ) ) {
+		tListaGenerica * nuevo = malloc(sizeof(tListaGenerica));
+		nuevo->resultado = resultado;
+		nuevo->nombre = malloc(strlen(nombre) + 1);
+		strcpy(nuevo->nombre, nombre);
+		nuevo->cola = primero;
+		return nuevo;
 	}
-	if(prev == NULL){//no hay nodo ingresado
-		nodo->cola = NULL;
-		lista = nodo;
-	}
-	else{//lo pongo a lo ultimo
-		prev->cola = nodo;
-		nodo->cola = NULL;
-	}
-	return;
+
+	primero->cola = ingresarRecursiva(primero->cola,nombre,resultado);
+	return primero;
 }
 
 static void queryGeneral(ciudadADT ciudad, tGeneral * vector, size_t dim, size_t flag) { //llamada cuando se terminan de leer ambos archivos .csv
 	double res;
 	for(size_t i = 0; i < dim; i++) {
-		tListaGenerica * new = malloc(sizeof(tListaGenerica)); // chequear error
 		if(flag == QUERY1){
 			res = vector[i].param2;
+			ciudad->primerNodoQ1 = ingresarRecursiva(ciudad->primerNodoQ1, vector[i].nombre, res);
 		}
-		else if (	flag == QUERY2 ){
+		else if (flag == QUERY2){
 		  res = vector[i].param2 / vector[i].param1;
+			ciudad->primerNodoQ2 = ingresarRecursiva(ciudad->primerNodoQ2, vector[i].nombre, res);
 		}
 		else{
 			res = vector[i].param1 / vector[i].param2;
+			ciudad->primerNodoQ3 = ingresarRecursiva(ciudad->primerNodoQ3, vector[i].nombre, res);
 		}
-		new->resultado = res;
-		new->nombre = malloc(strlen(vector[i].nombre)); // VERIFICAR MALLOC
-		strcpy(new->nombre, vector[i].nombre);
-		ingresarOrdenadoLista(new, ciudad->primerNodo);
 	}
 }
 
-void query(ciudadADT ciudad, size_t numero){
-
-	if( numero != QUERY3)
+tListaGenerica * query(ciudadADT ciudad, size_t numero) {
+	if( numero == QUERY1) {
 		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
-	else
+		return ciudad->primerNodoQ1;
+	}
+	else if( numero == QUERY2) {
+		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
+		return ciudad->primerNodoQ2;
+	}
+	else{
 		queryGeneral(ciudad, ciudad->bosque, ciudad->dimBosque, numero);
-}
-//calcula el indice y lo ingresa ordenado en una lista
-
-void buscaBarrios(ciudadADT ciudad) { // FUNCION PARA DEBUG
-	for(int i = 0; i< ciudad->dimBarrios; i++) {
-			printf("%s\t",ciudad->barrios[i].nombre);
-			printf("%d\t", (int) ciudad->barrios[i].param1);
-			printf("%lu \n", ciudad->barrios[i].param2);
+		return ciudad->primerNodoQ3;
 	}
-	printf("%zu \n",ciudad->dimBarrios);
-}
-
-void buscaArboles(ciudadADT ciudad) { // fUNCION PARA DEBUG
-	for(int i = 0; i<ciudad->dimBosque; i++) {
-		printf("%s\t", ciudad->bosque[i].nombre);
-		printf("%.2f\t", ciudad->bosque[i].param1);
-		printf("%lu \n", ciudad->bosque[i].param2);
-	}
-	printf("%zu \n",ciudad->dimBosque);
 }
 
 static void freeRecLista(tListaGenerica * first){
-	if(first == NULL) {
+	if( first == NULL)
 		return;
-	}
 	freeRecLista(first->cola);
-	tListaGenerica * aux = first;
-	first = first->cola;
-	free(aux);
-	return;
+	free(first);
 }
 
 void freeCiudad(ciudadADT ciudad) {
-	freeRecLista(ciudad->primerNodo);
+	freeRecLista(ciudad->primerNodoQ1);
+	freeRecLista(ciudad->primerNodoQ2);
+	freeRecLista(ciudad->primerNodoQ3);
 	free(ciudad->bosque);
 	free(ciudad->barrios);
 	free(ciudad);
