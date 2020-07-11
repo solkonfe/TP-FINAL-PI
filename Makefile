@@ -1,18 +1,32 @@
-OBJS = main.o backend.o
-BINARY = programa
+OBJS = backend.o lectura.o query.o
+BUE = mainBUE.o
+VAN = mainVAN.o
+BINARYBUE = arbolesADTBUE
+BINARYVAN = arbolesADTVAN
 CFLAGS = -pedantic -std=c99 -Wall -fsanitize=address -g
-LSFLAGS = -fsanitize=address
 
-all: programa
+all: programaBUE programaVAN
 
-programa: $(OBJS)
-	gcc $(LSFLAGS) -o $(BINARY) $(OBJS)
+programaBUE: $(OBJS) $(BUE)
+	gcc $(CFLAGS) -o $(BINARYBUE) $(BUE) $(OBJS)
   
-main2.o: main2.c ciudadADT.h
-	gcc $(CFLAGS) -c main.c
-  
-backend.o: backend.c ciudadADT.h
+programaVAN: $(OBJS) $(VAN)
+	gcc $(CFLAGS) -o $(BINARYVAN) $(VAN) $(OBJS)
+
+mainBUE.o: mainBUE.c query.h
+	gcc $(CFLAGS) -c mainBUE.c
+
+mainVAN.o: mainVAN.c query.h
+	gcc $(CFLAGS) -c mainVAN.c
+
+backend.o: backend.c backend.h
 	gcc $(CFLAGS) -c backend.c
+
+query.o: query.c query.h
+	gcc $(CFLAGS) -c query.c
+
+lectura.o: lectura.c lectura.h
+	gcc $(CFLAGS) -c lectura.c
 
 clean:
 	rm -f $(BINARY) $(OBJS)
