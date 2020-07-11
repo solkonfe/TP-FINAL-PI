@@ -158,6 +158,7 @@ static void freeRecLista(tListaGenerica * first){
 	if( first == NULL)
 		return;
 	freeRecLista(first->cola);
+	free(first->nombre);
 	free(first);
 }
 
@@ -165,7 +166,13 @@ void freeCiudad(ciudadADT ciudad) {
 	freeRecLista(ciudad->primerNodoQ1);
 	freeRecLista(ciudad->primerNodoQ2);
 	freeRecLista(ciudad->primerNodoQ3);
+	for(int i=0; i < ciudad->dimBosque; i++){
+		free(ciudad->bosque[i].nombre);
+	}
 	free(ciudad->bosque);
+	for(int j = 0; j < ciudad->dimBarrios; j++){
+		free(ciudad->barrios[j].nombre);
+	}
 	free(ciudad->barrios);
 	free(ciudad);
 }
