@@ -52,14 +52,16 @@ void leeArboles(const char * archivo, ciudadADT ciudad, size_t flag, size_t c1, 
 					strtok(NULL, delim);
 			}
 			if( flag ) { // en el caso de los arboles VAN debemos intercambiar los campos
-				char * swap = malloc(strlen(campos[0]) + 1);
-				strcpy(swap,campos[0]);
-				strcpy(campos[0],campos[1]);
-				strcpy(campos[1],swap);
+				if(agregarArbol(ciudad, campos[1], campos[0], atof(campos[2])) != 1 ) {
+					printf("Error al agregar el arbol por insuficiencia de memoria\n");
+					exit(2);
+				}
 			}
-			if(agregarArbol(ciudad, campos[0], campos[1], atof(campos[2])) != 1 ) {
-				printf("Error al agregar el arbol por insuficiencia de memoria\n");
-				exit(2);
+			else {
+			 	if (agregarArbol(ciudad, campos[0], campos[1], atof(campos[2])) != 1 ) {
+					printf("Error al agregar el arbol por insuficiencia de memoria\n");
+					exit(2);
+				}
 			}
 		}
 	}
