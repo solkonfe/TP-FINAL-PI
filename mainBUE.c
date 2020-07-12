@@ -1,14 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "backend.h"
+#include "lectura.h"
 #include "query.h"
 //CIUDAD AUTONOMA DE BUENOS AIRES
 #define CAMPO_COMUNA 3
 #define CAMPO_ESPECIE 8
 #define CAMPO_DIAM 12
-
 #define BUE 0
-#define VAN 1
 
 int main(int argc, char * argv[]) {
   ciudadADT newciudad = nuevaCiudad();
@@ -22,5 +19,6 @@ int main(int argc, char * argv[]) {
   generarQuery(newciudad,QUERY3);
 
   freeCiudad(newciudad);
+  printf("Se han generado los archivos correctamente\n");
   return 0;
 }
