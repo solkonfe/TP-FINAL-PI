@@ -18,10 +18,8 @@ void leeBarrios(const char * archivo, ciudadADT ciudad) {
 		if(!feof(flujo)){
 			campos[0] = strtok(aux,delim);
 			campos[1] = strtok(NULL, delim);
-			if(!agregarBarrio(ciudad,campos[0],atof(campos[1]))) {
-				printf("No se pudo agregar el barrio por insuficiencia de memoria\n");
+			if(!agregarBarrio(ciudad,campos[0],atof(campos[1])))
 				exit(2);
-			}
 		}
 	}
 
@@ -33,7 +31,7 @@ void leeArboles(const char * archivo, ciudadADT ciudad, size_t flag, size_t c1, 
 	const char delim[2] = ";";
 	char * campos[CAMPOS_ARBOLES];
 
-	FILE * flujo = fopen(archivo, "r"); // apertura del archivo de barrios
+	FILE * flujo = fopen(archivo, "r"); // apertura del archivo de arboles
 	if( flujo == NULL ) {
 		printf("Error en la apertura del archivo\n");
 		exit(1);
@@ -52,19 +50,14 @@ void leeArboles(const char * archivo, ciudadADT ciudad, size_t flag, size_t c1, 
 					strtok(NULL, delim);
 			}
 			if( flag ) { // en el caso de los arboles VAN debemos intercambiar los campos
-				if(agregarArbol(ciudad, campos[1], campos[0], atof(campos[2])) != 1 ) {
-					printf("Error al agregar el arbol por insuficiencia de memoria\n");
+				if(agregarArbol(ciudad, campos[1], campos[0], atof(campos[2])) != 1 )
 					exit(2);
-				}
 			}
 			else {
-			 	if (agregarArbol(ciudad, campos[0], campos[1], atof(campos[2])) != 1 ) {
-					printf("Error al agregar el arbol por insuficiencia de memoria\n");
+			 	if (agregarArbol(ciudad, campos[0], campos[1], atof(campos[2])) != 1 )
 					exit(2);
-				}
 			}
 		}
 	}
-
 	fclose(flujo);
 }
