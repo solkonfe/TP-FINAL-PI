@@ -4,7 +4,7 @@
 #include "query.h"
 ///*VANCOUVER
 #define CAMPO_COMUNA 13
-#define CAMPO_ESPECIE 5
+#define CAMPO_ESPECIE 7
 #define CAMPO_DIAM 16
 //*/
 /*
