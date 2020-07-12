@@ -4,8 +4,7 @@ VAN = mainVAN.o
 BINARYBUE = arbolesADTBUE
 BINARYVAN = arbolesADTVAN
 CFLAGS = -pedantic -std=c99 -Wall -fsanitize=address -g
-
-all: programaBUE programaVAN
+QUERY = query1.csv query2.csv query3.csv
 
 programaBUE: $(OBJS) $(BUE)
 	gcc $(CFLAGS) -o $(BINARYBUE) $(BUE) $(OBJS)
@@ -29,4 +28,10 @@ lectura.o: lectura.c lectura.h
 	gcc $(CFLAGS) -c lectura.c
 
 clean:
-	rm -f $(BINARY) $(OBJS)
+	rm -f $(OBJS) $(BUE) $(VAN)
+
+delexecutables: 
+	rm -f $(BINARYBUE) $(BINARYVAN)
+
+delquery:
+	rm -f $(QUERY)
