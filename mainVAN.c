@@ -1,13 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "backend.h"
+#include "lectura.h"
 #include "query.h"
-///*VANCOUVER
+//VANCOUVER
 #define CAMPO_COMUNA 13
 #define CAMPO_ESPECIE 7
 #define CAMPO_DIAM 16
-
-#define BUE 0
 #define VAN 1
 
 int main(int argc, char * argv[]) {
@@ -22,5 +19,6 @@ int main(int argc, char * argv[]) {
   generarQuery(newciudad,QUERY3);
 
   freeCiudad(newciudad);
+  printf("Se han generado los archivos correctamente\n");
   return 0;
 }
