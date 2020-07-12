@@ -1,33 +1,31 @@
 #include "backend.h"
-
-/////////////////////////////////////////////////estructura con los datos sin procesar/////////////////////////////
+// tGeneral es la estructura a utilizar para guardar datos, tanto de barrios como de arboles
 typedef struct tGeneral{
 	char * nombre;
 	double param1; // cantDeHabitantes o sumaDiametros
 	unsigned long int param2; //cantdeArb
 }tGeneral;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct ciudadCDT{
-	// datos sin procesar
-	struct tGeneral * barrios;   // vector de structs tBarrio
+	struct tGeneral * barrios;
 	size_t dimBarrios;
-	struct tGeneral * bosque;     // vector de structs tArbol
+	struct tGeneral * bosque;
 	size_t dimBosque;
 
+  // Nodos para las listas de salida
 	struct tListaGenerica * primerNodoQ1;
 	struct tListaGenerica * primerNodoQ2;
 	struct tListaGenerica * primerNodoQ3;
 }ciudadCDT;
 
-///////////////////////////////////////////////Funciones////////////////////////////////////////////////
-//////////////////FALTA CHEQUEAR LOS ERRORES DE MEMORIA CON ERRNO///////////////////////////////////////
-
-ciudadADT nuevaCiudad(){ // FUNCION CHEQUEADA
-	return calloc(1, sizeof(ciudadCDT)); // VERIFICACION DE ERRNO
+ciudadADT nuevaCiudad(){
+	ciudadCDT ciudad;
+  if ((ciudad = calloc(1,sizeof(struct ciudadCDT))) == NULL || errno == ENOMEM)
+  	fprintf(stderr, "Errno: %d Error %s \nNo se pudo generar la ciudad\n", errno, strerror(errno));
+  return ciudad;
 }
 
-static int pertenece(tGeneral * vector, char * nombre, size_t dim, size_t * indice) { // FUNCION CHEQUEADA
+static int pertenece(tGeneral * vector, char * nombre, size_t dim, size_t * indice) {
 	for(int i = 0; i < dim; i++) {
 		if(strcmp(vector[i].nombre, nombre) == 0) {
 			if(indice != NULL)
@@ -38,43 +36,49 @@ static int pertenece(tGeneral * vector, char * nombre, size_t dim, size_t * indi
 	return 0;
 }
 
-int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) { // FUNCION CHEQUEADA
+int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) {
 	if( ! pertenece(ciudad->barrios, nombre, ciudad->dimBarrios, NULL)) {
-		ciudad->barrios = realloc(ciudad->barrios, sizeof(tGeneral) * (ciudad->dimBarrios + 1));
-		if( ciudad->barrios == NULL ) { // ESTA VERIFICACION HAY QUE CORREGIRLA CON ERRNO
+		if((ciudad->barrios = realloc(ciudad->barrios, sizeof(tGeneral) * (ciudad->dimBarrios + 1)) == NULL || errno == ENOMEM );
+			fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el barrio\n", errno, strerror(errno));
+			freeCiudad(ciudad);
 			return 0;
 		}
-		ciudad->barrios[ciudad->dimBarrios].nombre = malloc(strlen(nombre) + 1);
-		// VERIFICAR MALLOC CON ERRNO
-		strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
-		ciudad->barrios[ciudad->dimBarrios].param1 = poblacion;
-		ciudad->barrios[ciudad->dimBarrios++].param2 = 0;
+	if((ciudad->barrios[ciudad->dimBarrios].nombre = malloc(strlen(nombre) + 1)) == NULL || errno == ENOMEM ) {
+		fprintf(stderr, "Errno: %d Error %s \nNo se pudo guardar el nombre del barrio\n", errno, strerror(errno));
+		freeCiudad(ciudad);
+		return 0;
+	}
+	strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
+	ciudad->barrios[ciudad->dimBarrios].param1 = poblacion;
+	ciudad->barrios[ciudad->dimBarrios++].param2 = 0;
 	}
 	return 1;
 }
 
-static void intercambioVec(tGeneral * b1, tGeneral * b2) { // FUNCION CHEQUEADA
-		tGeneral aux = *b1;
-		*b1 = *b2;
-		*b2 = aux;
+static void intercambioVec(tGeneral * b1, tGeneral * b2) {
+	tGeneral aux = *b1;
+	*b1 = *b2;
+	*b2 = aux;
 }
 
-void ordenarBarrios(ciudadADT ciudad){ // FUNCION CHEQUEADA
-		for(int i = 0; i < ciudad->dimBarrios - 1; i++) {
-			for(int j = i + 1; j < ciudad->dimBarrios; j++) {
-				if(strcmp(ciudad->barrios[i].nombre, ciudad->barrios[j].nombre) > 0){
-					intercambioVec(&(ciudad->barrios[i]), &(ciudad->barrios[j]));
-				}
+void ordenarBarrios(ciudadADT ciudad){
+	for(int i = 0; i < ciudad->dimBarrios - 1; i++) {
+		for(int j = i + 1; j < ciudad->dimBarrios; j++) {
+			if(strcmp(ciudad->barrios[i].nombre, ciudad->barrios[j].nombre) > 0){
+				intercambioVec(&(ciudad->barrios[i]), &(ciudad->barrios[j]));
 			}
 		}
+	}
 }
 
-static void agregarArbolEnBarrio(ciudadADT ciudad, char * nombre) { // BASADA EN BUSQUEDA BINARIA
-	int ultimo = ciudad->dimBarrios - 1; // ultimo = 2
+//Aprovechando que primero leemos el archivo de barrios, podemos ordenar alfabeticamente los barrios
+//para usar busqueda binaria y bajar la complejidad de la insercion de arboles
+static void agregarArbolEnBarrio(ciudadADT ciudad, char * nombre) {
+	int ultimo = ciudad->dimBarrios - 1;
 	int medio,c;
 	int primero = 0;
 	while(primero <= ultimo) {
-		medio = (primero + ultimo) / 2; // medio = 1
+		medio = (primero + ultimo) / 2;
 		if( (c = strcmp(ciudad->barrios[medio].nombre, nombre)) == 0 ) {
 			ciudad->barrios[medio].param2++;
 			return;
@@ -90,8 +94,17 @@ static int agregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametr
 	size_t indice = ciudad->dimBosque;
 
 	if(!pertenece(ciudad->bosque, especie, ciudad->dimBosque, &indice)) {
-		ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tGeneral)); // VERIFICAR REALLOC
-		ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie) +1); // VERIFICAR MALLOC
+		if((ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tGeneral))) == NULL || errno == ENOMEM ){
+			fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el arbol\n", errno, strerror(errno));
+			freeCiudad(ciudad);
+			return 0;
+		}
+
+	if((ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie) +1)) == NULL || errno == ENOMEM ){
+		fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el nombre del arbol\n", errno, strerror(errno));
+		freeCiudad(ciudad);
+		return 0;
+	}
 		strcpy(ciudad->bosque[ciudad->dimBosque].nombre, especie);
 		ciudad->bosque[ciudad->dimBosque].param1 = 0;
 		ciudad->bosque[ciudad->dimBosque++].param2 = 0;
@@ -99,7 +112,7 @@ static int agregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametr
 
 	ciudad->bosque[indice].param1 += diametro;
 	ciudad->bosque[indice].param2 += 1;
-	return 1; // chequear
+	return 1;
 }
 
 int agregarArbol(ciudadADT ciudad, char * nombre, char * especie, double diametro) {
@@ -110,8 +123,17 @@ int agregarArbol(ciudadADT ciudad, char * nombre, char * especie, double diametr
 static tListaGenerica * ingresarRecursiva(tListaGenerica * primero, char * nombre, double resultado) {
 	if(primero == NULL || primero->resultado < resultado || (primero->resultado == resultado && strcmp(primero->nombre, nombre)>0 ) ) {
 		tListaGenerica * nuevo = malloc(sizeof(tListaGenerica));
+		if(nuevo == NULL || errno == ENOMEM){
+			fprintf(stderr, "Errno: %d Error %s \nNo se pudo armar la lista de salida\n", errno, strerror(errno));
+			freeCiudad(ciudad);
+			return NULL;
+		}
 		nuevo->resultado = resultado;
-		nuevo->nombre = malloc(strlen(nombre) + 1);
+		if((nuevo->nombre = malloc(strlen(nombre) + 1)) == NULL || errno == ENOMEM) {
+			fprintf(stderr, "Errno: %d Error %s \nNo se pudo armar la lista de salida\n", errno, strerror(errno));
+			freeCiudad(ciudad);
+			return NULL;
+		}
 		strcpy(nuevo->nombre, nombre);
 		nuevo->cola = primero;
 		return nuevo;
@@ -139,7 +161,7 @@ static void queryGeneral(ciudadADT ciudad, tGeneral * vector, size_t dim, size_t
 	}
 }
 
-tListaGenerica * query(ciudadADT ciudad, size_t numero) {
+tListaGenerica * resuelveQuery(ciudadADT ciudad, size_t numero) {
 	if( numero == QUERY1) {
 		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
 		return ciudad->primerNodoQ1;
@@ -166,13 +188,11 @@ void freeCiudad(ciudadADT ciudad) {
 	freeRecLista(ciudad->primerNodoQ1);
 	freeRecLista(ciudad->primerNodoQ2);
 	freeRecLista(ciudad->primerNodoQ3);
-	for(int i=0; i < ciudad->dimBosque; i++){
+	for(int i=0; i < ciudad->dimBosque; i++)
 		free(ciudad->bosque[i].nombre);
-	}
 	free(ciudad->bosque);
-	for(int j = 0; j < ciudad->dimBarrios; j++){
+	for(int j = 0; j < ciudad->dimBarrios; j++)
 		free(ciudad->barrios[j].nombre);
-	}
 	free(ciudad->barrios);
 	free(ciudad);
 }
