@@ -6,7 +6,7 @@ void generarQuery(ciudadADT ciudad, size_t numero) {
   sprintf(nombre_archivo, "query%zu.csv", numero);
   FILE * archivoQuery = fopen(nombre_archivo, "w");
 
-  tListaGenerica * lista = query(ciudad, numero); // arma la lista ordenada
+  tListaGenerica * lista = resuelveQuery(ciudad, numero); // arma la lista ordenada
   tListaGenerica * iterador = lista;
 
   if(numero == QUERY1)
@@ -24,7 +24,8 @@ void generarQuery(ciudadADT ciudad, size_t numero) {
   }
   else {
   	while(iterador != NULL) {
-      iterador->resultado *= 100;      
+      // Se trunca a dos decimales el resultado obtenido. ( diametro || indice ).
+      iterador->resultado *= 100;
       int aux = (int) iterador->resultado;
       iterador->resultado = aux / 100.0;
   		fprintf(archivoQuery, "%s;%.2f\n", iterador->nombre, iterador->resultado);
