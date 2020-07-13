@@ -18,8 +18,10 @@ void leeBarrios(const char * archivo, ciudadADT ciudad) {
 		if(!feof(flujo)){
 			campos[0] = strtok(aux,delim);
 			campos[1] = strtok(NULL, delim);
-			if(!agregarBarrio(ciudad,campos[0],atof(campos[1])))
+			if(!agregarBarrio(ciudad,campos[0],atof(campos[1]))){
+				freeCiudad(ciudad);
 				exit(2);
+			}
 		}
 	}
 
@@ -50,12 +52,16 @@ void leeArboles(const char * archivo, ciudadADT ciudad, size_t flag, size_t c1, 
 					strtok(NULL, delim);
 			}
 			if( flag ) { // en el caso de los arboles VAN debemos intercambiar los campos
-				if(agregarArbol(ciudad, campos[1], campos[0], atof(campos[2])) != 1 )
+				if(agregarArbol(ciudad, campos[1], campos[0], atof(campos[2])) != 1 ){
+					freeCiudad(ciudad);
 					exit(2);
+				}
 			}
 			else {
-			 	if (agregarArbol(ciudad, campos[0], campos[1], atof(campos[2])) != 1 )
+			 	if (agregarArbol(ciudad, campos[0], campos[1], atof(campos[2])) != 1 ){
+					freeCiudad(ciudad);
 					exit(2);
+				}
 			}
 		}
 	}

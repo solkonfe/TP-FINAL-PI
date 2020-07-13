@@ -18,9 +18,10 @@ typedef struct ciudadCDT{
 	struct tListaGenerica * primerNodoQ3;
 }ciudadCDT;
 
-ciudadADT nuevaCiudad(){
-	ciudadCDT ciudad;
-  if ((ciudad = calloc(1,sizeof(struct ciudadCDT))) == NULL || errno == ENOMEM)
+ciudadADT nuevaCiudad() {
+	ciudadADT ciudad;
+  ciudad = calloc(1,sizeof(struct ciudadCDT));
+	if(ciudad == NULL || errno == ENOMEM)
   	fprintf(stderr, "Errno: %d Error %s \nNo se pudo generar la ciudad\n", errno, strerror(errno));
   return ciudad;
 }
@@ -38,20 +39,20 @@ static int pertenece(tGeneral * vector, char * nombre, size_t dim, size_t * indi
 
 int agregarBarrio(ciudadADT ciudad, char * nombre, int poblacion) {
 	if( ! pertenece(ciudad->barrios, nombre, ciudad->dimBarrios, NULL)) {
-		if((ciudad->barrios = realloc(ciudad->barrios, sizeof(tGeneral) * (ciudad->dimBarrios + 1)) == NULL || errno == ENOMEM );
+		ciudad->barrios = realloc(ciudad->barrios, sizeof(tGeneral) * (ciudad->dimBarrios + 1));
+		if(ciudad->barrios == NULL || errno == ENOMEM){
 			fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el barrio\n", errno, strerror(errno));
-			freeCiudad(ciudad);
 			return 0;
 		}
-	if((ciudad->barrios[ciudad->dimBarrios].nombre = malloc(strlen(nombre) + 1)) == NULL || errno == ENOMEM ) {
+	}
+	ciudad->barrios[ciudad->dimBarrios].nombre = malloc(strlen(nombre) + 1);
+	if(ciudad->barrios[ciudad->dimBarrios].nombre == NULL || errno == ENOMEM){
 		fprintf(stderr, "Errno: %d Error %s \nNo se pudo guardar el nombre del barrio\n", errno, strerror(errno));
-		freeCiudad(ciudad);
 		return 0;
 	}
 	strcpy(ciudad->barrios[ciudad->dimBarrios].nombre, nombre);
 	ciudad->barrios[ciudad->dimBarrios].param1 = poblacion;
 	ciudad->barrios[ciudad->dimBarrios++].param2 = 0;
-	}
 	return 1;
 }
 
@@ -94,17 +95,16 @@ static int agregarArbolEnBosque(ciudadADT ciudad, char * especie, double diametr
 	size_t indice = ciudad->dimBosque;
 
 	if(!pertenece(ciudad->bosque, especie, ciudad->dimBosque, &indice)) {
-		if((ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tGeneral))) == NULL || errno == ENOMEM ){
+		ciudad->bosque = realloc(ciudad->bosque, (ciudad->dimBosque + 1) * sizeof(tGeneral));
+		if(ciudad->bosque == NULL || errno == ENOMEM) {
 			fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el arbol\n", errno, strerror(errno));
-			freeCiudad(ciudad);
 			return 0;
 		}
-
-	if((ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie) +1)) == NULL || errno == ENOMEM ){
-		fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el nombre del arbol\n", errno, strerror(errno));
-		freeCiudad(ciudad);
-		return 0;
-	}
+		ciudad->bosque[ciudad->dimBosque].nombre = malloc(strlen(especie) +1);
+		if(ciudad->bosque[ciudad->dimBosque].nombre == NULL || errno == ENOMEM ){
+			fprintf(stderr, "Errno: %d Error %s \nNo se pudo agregar el nombre del arbol\n", errno, strerror(errno));
+			return 0;
+		}
 		strcpy(ciudad->bosque[ciudad->dimBosque].nombre, especie);
 		ciudad->bosque[ciudad->dimBosque].param1 = 0;
 		ciudad->bosque[ciudad->dimBosque++].param2 = 0;
@@ -125,13 +125,12 @@ static tListaGenerica * ingresarRecursiva(tListaGenerica * primero, char * nombr
 		tListaGenerica * nuevo = malloc(sizeof(tListaGenerica));
 		if(nuevo == NULL || errno == ENOMEM){
 			fprintf(stderr, "Errno: %d Error %s \nNo se pudo armar la lista de salida\n", errno, strerror(errno));
-			freeCiudad(ciudad);
 			return NULL;
 		}
 		nuevo->resultado = resultado;
-		if((nuevo->nombre = malloc(strlen(nombre) + 1)) == NULL || errno == ENOMEM) {
+		nuevo->nombre = malloc(strlen(nombre) + 1);
+		if(nuevo->nombre == NULL || errno == ENOMEM){
 			fprintf(stderr, "Errno: %d Error %s \nNo se pudo armar la lista de salida\n", errno, strerror(errno));
-			freeCiudad(ciudad);
 			return NULL;
 		}
 		strcpy(nuevo->nombre, nombre);
@@ -161,7 +160,7 @@ static void queryGeneral(ciudadADT ciudad, tGeneral * vector, size_t dim, size_t
 	}
 }
 
-tListaGenerica * resuelveQuery(ciudadADT ciudad, size_t numero) {
+struct tListaGenerica * resuelveQuery(ciudadADT ciudad, size_t numero) {
 	if( numero == QUERY1) {
 		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
 		return ciudad->primerNodoQ1;
@@ -170,7 +169,7 @@ tListaGenerica * resuelveQuery(ciudadADT ciudad, size_t numero) {
 		queryGeneral(ciudad, ciudad->barrios, ciudad->dimBarrios, numero);
 		return ciudad->primerNodoQ2;
 	}
-	else{
+	else {
 		queryGeneral(ciudad, ciudad->bosque, ciudad->dimBosque, numero);
 		return ciudad->primerNodoQ3;
 	}

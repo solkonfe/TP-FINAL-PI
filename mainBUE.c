@@ -1,5 +1,3 @@
-#include "backend.h"
-#include "lectura.h"
 #include "query.h"
 //CIUDAD AUTONOMA DE BUENOS AIRES
 #define CAMPO_COMUNA 3

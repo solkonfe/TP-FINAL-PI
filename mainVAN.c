@@ -1,5 +1,3 @@
-#include "backend.h"
-#include "lectura.h"
 #include "query.h"
 //VANCOUVER
 #define CAMPO_COMUNA 13
