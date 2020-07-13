@@ -6,6 +6,8 @@ BINARYVAN = arbolesADTVAN
 CFLAGS = -pedantic -std=c99 -Wall -fsanitize=address -g
 QUERY = query1.csv query2.csv query3.csv
 
+all: programaBUE programaVAN
+
 programaBUE: $(OBJS) $(BUE)
 	gcc $(CFLAGS) -o $(BINARYBUE) $(BUE) $(OBJS)
   
