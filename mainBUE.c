@@ -6,6 +6,10 @@
 #define BUE 0
 
 int main(int argc, char * argv[]) {
+  if(argc!=3){
+    printf("debe invocar al programa con 2 archivos.csv, ver README\n");
+    return 1;
+  }
   ciudadADT newciudad = nuevaCiudad();
   leeBarrios(argv[2], newciudad);
   ordenarBarrios(newciudad);
