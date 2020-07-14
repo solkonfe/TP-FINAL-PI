@@ -24,10 +24,6 @@ void generarQuery(ciudadADT ciudad, size_t numero) {
   }
   else {
   	while(iterador != NULL) {
-      // Se trunca a dos decimales el resultado obtenido. ( diametro || indice ).
-      iterador->resultado *= 100;
-      int aux = (int) iterador->resultado;
-      iterador->resultado = aux / 100.0;
   		fprintf(archivoQuery, "%s;%.2f\n", iterador->nombre, iterador->resultado);
   		iterador = iterador->cola;
     }

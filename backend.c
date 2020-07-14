@@ -142,6 +142,12 @@ static tListaGenerica * ingresarRecursiva(tListaGenerica * primero, char * nombr
 	return primero;
 }
 
+static void trunca(double * valor){
+	*valor *= 100;
+	int aux = (int) *valor;
+	*valor = aux/100.0;
+}
+
 static void queryGeneral(ciudadADT ciudad, tGeneral * vector, size_t dim, size_t flag) { //llamada cuando se terminan de leer ambos archivos .csv
 	double res;
 	for(size_t i = 0; i < dim; i++) {
@@ -151,10 +157,12 @@ static void queryGeneral(ciudadADT ciudad, tGeneral * vector, size_t dim, size_t
 		}
 		else if (flag == QUERY2){
 		  res = vector[i].param2 / vector[i].param1;
+			trunca(&res);
 			ciudad->primerNodoQ2 = ingresarRecursiva(ciudad->primerNodoQ2, vector[i].nombre, res);
 		}
 		else{
 			res = vector[i].param1 / vector[i].param2;
+			trunca(&res);
 			ciudad->primerNodoQ3 = ingresarRecursiva(ciudad->primerNodoQ3, vector[i].nombre, res);
 		}
 	}
